@@ -18,7 +18,7 @@ function resize() {
   }
 }
 resize();
-window.addEventListener("resize", resize);
+// window.addEventListener("resize", resize);
 
 function draw() {
     // create gradient background
