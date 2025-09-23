@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Orbitron:wght@400..900&display=swap');
+
+* {
+    margin:0;
+    padding:0;
+    outline:none;
+    font-family: "Montserrat", sans-serif;
+    color:white;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: radial-gradient(circle at bottom, #0a1a2f 0%, #000814 100%);
+    min-height:100vh;
+}
+
+a {
+    text-decoration:none;
+}
+
+#starfield {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+}
+
+.site-container {
+    display:flex;
+    flex-direction:column;
+    width:90%;
+    max-width:600px;
+    margin:auto;
+}
+
+.header-info {
+    margin-top:3rem;
+    margin-bottom:5rem;
+}
+
+h1 {
+    font-family:"Orbitron", sans-serif;
+}
+
+.header-info h1 {
+    font-size: 3rem;
+    line-height: 1.1;
+    margin-bottom:0.5rem;
+}
+
+.header-info h3 {
+    color:rgb(224, 224, 224);
+    font-size: 1rem;
+}
+
+.red {
+    color:rgb(255, 161, 161);
+}
+
+.blue {
+    color:rgb(182, 182, 255);
+}
+
+.yellow {
+    color: rgb(255, 255, 116);
+}
+
+
+.social-links {
+    margin-top:0.75rem;
+    display:flex;
+    gap:0.35rem;
+}
+
+.social-links button {
+    padding:0.25rem 0.5rem;
+    border:none;
+    border-radius:0.15rem;
+    font-family:"Montserrat", sans-serif;
+    font-weight:bold;
+    transition:all ease 200ms;
+    cursor:pointer;
+    background:rgb(61, 98, 185);
+}
+
+.social-links button a {
+    text-decoration:none;
+}
+
+.social-links button:hover {
+    scale:1.05;
+}
+
+
+.project-library h1 {
+    font-size:1.5rem;
+    font-weight:bold;
+    margin-bottom:1rem;
+}
+
+.tabs {
+    display:flex;
+    gap:0.5rem;
+    flex-wrap:wrap;
+    margin-bottom:2rem;
+}
+
+.tab {
+    padding:0.5rem 0.75rem;
+    background:rgb(70, 70, 70);
+    border:none;
+    border-radius:0.15rem;
+    transition:all ease 200ms;
+    font-family:"Montserrat", sans-serif;
+    font-weight:bold;
+    font-size:1rem;
+    cursor:pointer;
+}
+
+.tab:hover {
+    scale:1.05;
+}
+
+.project-header {
+    font-family:"Orbitron", sans-serif;
+    color:rgb(236, 236, 236);
+    padding:0.5rem 0;
+    font-size:1.25rem;
+    font-weight:bold;
+    border-bottom:1px solid rgb(236, 236, 236);
+}
+
+.project-section {
+    margin-bottom:2rem;
+}
+
+.project-image-container {
+    width:10rem;
+    height:10rem;
+    overflow:hidden;
+    border-radius:0.25rem;
+    flex-shrink: 0;
+}
+
+.project-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* fills the square, crops if necessary */
+    object-position: center; /* center the image */
+}
+
+.project-card {
+    display:flex;
+    gap:1rem;
+    margin:1.5rem 0;
+}
+
+.project-info {
+    display:flex;
+    gap:0.2rem;
+    flex-direction: column;
+}
+
+.project-date, .project-tools, .project-status {
+    font-size:1rem;
+    color:rgb(218, 216, 216);
+}
+
+.project-title {
+    font-size:1.5rem;
+    color:white;
+    margin-bottom:0.3rem;
+} 
+
+.description {
+    font-size:0.75rem;
+    font-family:"Montserrat", sans-serif;
+    font-weight:bold;
+}
+
+.complete {
+    color:rgb(120, 255, 120);
+}
+
+.footer {
+    font-size:0.75rem;
+    color:white;
+    text-align:center;
+    border-top:1px solid white;
+    margin-top:3rem;
+    padding:1rem 0;
+}
+
+
+@media screen and (max-width: 550px) {
+    .header-info {
+        margin-top:1rem;
+    }
+
+    .project-image-container {
+        width:8rem;
+        height:8rem;
+    }
+
+    .project-date, .project-tools, .project-status {
+        font-size:0.75rem;
+        color:rgb(218, 216, 216);
+    }
+    
+    .project-title {
+        font-size:1.25rem;
+        color:white;
+    } 
+}
