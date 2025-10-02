@@ -46,3 +46,23 @@ function animate() {
   requestAnimationFrame(animate);
 }
 animate();
+
+
+
+
+
+document.querySelectorAll(".project-info").forEach(container => {
+  const desc = container.querySelector(".description");
+  if (!desc) return;
+
+  function adjustPadding() {
+    if (container.scrollHeight >= container.clientHeight) {
+      desc.style.paddingBottom = "1rem"; // add gap if content overflows
+    } else {
+      desc.style.paddingBottom = "0";   // reset if no overflow
+    }
+  }
+
+  adjustPadding();
+  window.addEventListener("resize", adjustPadding);
+});
