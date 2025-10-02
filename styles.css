@@ -157,6 +157,7 @@ h1 {
     gap:1rem;
     margin:1.5rem 0;
     transition: all ease 200ms;
+    height:10rem;
 }
 
 .project-card:hover {
@@ -164,10 +165,22 @@ h1 {
 }
 
 .project-info {
-    display:flex;
-    gap:0.2rem;
+    display: flex;
     flex-direction: column;
-}
+    gap: 0.2rem;
+    overflow-y: auto;
+    scrollbar-width: none;
+    position: relative;
+    height: 10rem;
+  
+    /* Fade */
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+  }
+
+.project-info::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
 
 .project-date, .project-tools, .project-status {
     font-size:1rem;
@@ -184,6 +197,7 @@ h1 {
     font-size:0.75rem;
     font-family:"Montserrat", sans-serif;
     font-weight:bold;
+    color:rgb(218, 216, 216);
 }
 
 .complete {
@@ -197,6 +211,11 @@ h1 {
     border-top:1px solid white;
     margin-top:3rem;
     padding:1rem 0;
+}
+
+.footer h3 {
+    width:90%;
+    margin:auto;
 }
 
 
@@ -216,7 +235,15 @@ h1 {
     }
     
     .project-title {
-        font-size:1.25rem;
+        font-size:1rem;
         color:white;
     } 
+
+    .project-info {
+        height:8rem;
+    }
+
+    .project-card {
+        height:8rem;
+    }
 }
