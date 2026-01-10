@@ -306,13 +306,16 @@
         }
 
         #input-hidden {
-            position: absolute;
-            opacity: 0;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             font-size: 16px;
+            opacity: 0;
+            z-index: 50;
+            cursor: text;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* ACHIEVEMENT TOASTS */
@@ -1887,8 +1890,19 @@
         document.body.appendChild(style);
 
         // INIT
-        window.onclick = () => input.focus();
-        input.focus();
+        function focusInput() {
+            input.focus();
+            // Force keyboard on iOS
+            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+                input.click();
+            }
+        }
+
+        window.addEventListener('click', focusInput);
+        window.addEventListener('touchstart', focusInput);
+
+        // Initial focus
+        focusInput();
         applyVibe({ vibe: 'neutral', intensity: 0 }, 500);
 
     </script>
