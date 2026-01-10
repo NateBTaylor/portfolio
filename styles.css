@@ -124,6 +124,23 @@ h1 {
     scale:1.05;
 }
 
+.easter-egg {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.25);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-style: italic;
+    padding: 0.5rem;
+    margin-top: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.easter-egg:hover {
+    color: #ff2a6d;
+    text-shadow: 0 0 10px #ff2a6d;
+    letter-spacing: 2px;
+}
+
 .project-header {
     font-family:"Orbitron", sans-serif;
     color:rgb(236, 236, 236);
