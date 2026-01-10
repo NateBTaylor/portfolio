@@ -307,10 +307,10 @@
 
         #input-hidden {
             position: fixed;
-            top: 0;
+            bottom: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 40vh;
             font-size: 16px;
             opacity: 0;
             z-index: 50;
@@ -983,7 +983,7 @@
         <button class="btn" onclick="exportText()">📋 COPY</button>
     </div>
 
-    <div id="tap-hint">TAP ANYWHERE TO TYPE</div>
+    <div id="tap-hint">TAP HERE TO TYPE</div>
 
     <script>
         // ============================================
@@ -1890,19 +1890,7 @@
         document.body.appendChild(style);
 
         // INIT
-        function focusInput() {
-            input.focus();
-            // Force keyboard on iOS
-            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                input.click();
-            }
-        }
-
-        window.addEventListener('click', focusInput);
-        window.addEventListener('touchstart', focusInput);
-
-        // Initial focus
-        focusInput();
+        input.focus();
         applyVibe({ vibe: 'neutral', intensity: 0 }, 500);
 
     </script>
