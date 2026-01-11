@@ -990,6 +990,7 @@
         <button class="btn" onclick="window.location.href='../rotbox'">🔙 ROT BOX</button>
         <button class="btn" onclick="resetPad()">💥 RESET</button>
         <button class="btn" onclick="exportText()">📋 COPY</button>
+        <button class="btn" onclick="shareRant()">🔗 SHARE</button>
     </div>
 
     <div id="tap-hint">TAP HERE TO TYPE</div>
@@ -1872,6 +1873,74 @@
             }
         }
 
+        function shareRant() {
+            const chips = Array.from(doc.querySelectorAll('.word-chip'));
+            if (chips.length === 0) {
+                showToast('😅', 'Nothing to share!');
+                return;
+            }
+
+            const rantData = chips.map(chip => {
+                const classList = Array.from(chip.classList);
+                const vibeClass = classList.find(c => c.startsWith('s-'));
+                const vibe = vibeClass ? vibeClass.substring(2) : 'neutral';
+                const transform = chip.style.transform || '';
+                const rotationMatch = transform.match(/rotate\(([^)]+)\)/);
+                const rotation = rotationMatch ? rotationMatch[1] : '0deg';
+                return {
+                    t: chip.innerText,
+                    v: vibe,
+                    r: rotation
+                };
+            });
+
+            const jsonStr = JSON.stringify(rantData);
+            const encoded = btoa(encodeURIComponent(jsonStr));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?r=${encoded}`;
+
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast('🔗', 'Link copied!');
+            }).catch(() => {
+                prompt('Copy this link:', shareUrl);
+            });
+        }
+
+        function loadSharedRant() {
+            const params = new URLSearchParams(window.location.search);
+            const encoded = params.get('r');
+            if (!encoded) return false;
+
+            try {
+                const jsonStr = decodeURIComponent(atob(encoded));
+                const rantData = JSON.parse(jsonStr);
+
+                if (!Array.isArray(rantData) || rantData.length === 0) return false;
+
+                rantData.forEach(word => {
+                    const chip = document.createElement('span');
+                    chip.innerText = word.t;
+                    chip.className = `word-chip s-${word.v || 'neutral'}`;
+                    chip.style.transform = `rotate(${word.r || '0deg'})`;
+                    doc.appendChild(chip);
+                });
+
+                wordCount = rantData.length;
+                wordCountDisplay.innerText = `${wordCount} words`;
+                document.body.classList.add('has-typed');
+
+                const lastVibe = rantData[rantData.length - 1]?.v || 'neutral';
+                applyVibe({ vibe: lastVibe, intensity: 5 }, 500);
+
+                window.history.replaceState({}, '', window.location.pathname);
+
+                showToast('📨', 'Rant loaded!');
+                return true;
+            } catch (e) {
+                console.error('Failed to load shared rant:', e);
+                return false;
+            }
+        }
+
         // KEYFRAME ANIMATIONS
         const style = document.createElement('style');
         style.innerHTML = `
@@ -1900,7 +1969,9 @@
 
         // INIT
         input.focus();
-        applyVibe({ vibe: 'neutral', intensity: 0 }, 500);
+        if (!loadSharedRant()) {
+            applyVibe({ vibe: 'neutral', intensity: 0 }, 500);
+        }
 
     </script>
 </body>
