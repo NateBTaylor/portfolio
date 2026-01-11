@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE VOID SHREDDER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=JetBrains+Mono:wght@400;700;800&family=Orbitron:wght@900&display=swap');
+
+        :root {
+            --bg: #0a0a0a;
+            --paper: #f5f5f0;
+            --accent: #fff;
+            --hazard: #ff6600;
+            --danger: #ff0040;
+            --neon: #00ffaa;
+            --message-bg: rgba(10, 10, 10, 0.95);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+            height: 100dvh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overscroll-behavior: none;
+            touch-action: none;
+            transition: background 0.3s, filter 0.1s;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 100%, rgba(255, 102, 0, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.3s;
+        }
+
+        body.overdrive {
+            --hazard: #ff0040;
+            background: #1a0008;
+        }
+
+        body.overdrive::before {
+            background: radial-gradient(circle at 50% 100%, rgba(255, 0, 64, 0.3) 0%, transparent 60%);
+        }
+
+        body.flash {
+            filter: brightness(1.5);
+        }
+
+        /* BACK LINK */
+        #back-link {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 100;
+            font-size: 0.7rem;
+            color: #666;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 8px 12px;
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+
+        #back-link:hover {
+            color: var(--hazard);
+            border-color: var(--hazard);
+            box-shadow: 0 0 15px rgba(255, 102, 0, 0.3);
+        }
+
+        /* SCANLINES */
+        #scan {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 90;
+            background: repeating-linear-gradient(0deg,
+                    rgba(0, 0, 0, 0) 0px,
+                    rgba(0, 0, 0, 0) 2px,
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px);
+            opacity: 0.5;
+        }
+
+        /* STATS */
+        #stats {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            text-align: right;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #count {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--accent);
+            line-height: 1;
+            text-shadow: 0 0 30px var(--hazard);
+            transition: transform 0.1s, text-shadow 0.3s;
+        }
+
+        #count.pop {
+            transform: scale(1.3);
+        }
+
+        #stats-label {
+            font-size: 0.6rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 2px;
+        }
+
+        /* COMBO */
+        #combo-container {
+            position: fixed;
+            top: 80px;
+            right: 15px;
+            text-align: right;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #combo {
+            font-family: 'Black Ops One';
+            font-size: 1.5rem;
+            color: var(--hazard);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 0 20px var(--hazard);
+        }
+
+        #combo.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #combo.mega {
+            font-size: 2rem;
+            color: var(--danger);
+            text-shadow: 0 0 30px var(--danger);
+        }
+
+        /* STREAK BAR */
+        #streak-container {
+            position: fixed;
+            top: 130px;
+            right: 15px;
+            width: 120px;
+            z-index: 100;
+        }
+
+        #streak-label {
+            font-size: 0.5rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: right;
+            margin-bottom: 3px;
+        }
+
+        #streak-bar {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #streak-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--hazard), var(--danger));
+            transition: width 0.2s;
+            box-shadow: 0 0 15px var(--hazard);
+            border-radius: 3px;
+        }
+
+        /* MESSAGE */
+        #msg-container {
+            position: fixed;
+            bottom: 300px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 95;
+            pointer-events: none;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        #void-message {
+            background: var(--message-bg);
+            color: var(--accent);
+            padding: 15px 30px;
+            border: 1px solid #333;
+            border-left: 3px solid var(--hazard);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            transition: border-color 0.3s;
+            min-width: 320px;
+            width: 100%;
+        }
+
+        #void-message h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.6rem;
+            color: var(--hazard);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 400;
+        }
+
+        #void-message p {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        /* ACHIEVEMENT POPUP */
+        #achievement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 200;
+            background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+            border: 2px solid var(--neon);
+            padding: 30px 50px;
+            text-align: center;
+            opacity: 0;
+            box-shadow: 0 0 100px var(--neon), inset 0 0 50px rgba(0, 255, 170, 0.1);
+            pointer-events: none;
+        }
+
+        #achievement h2 {
+            margin: 0 0 10px 0;
+            font-family: 'Black Ops One';
+            font-size: 1.5rem;
+            color: var(--neon);
+            text-shadow: 0 0 20px var(--neon);
+        }
+
+        #achievement p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* STAGE */
+        #stage {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20vh;
+            z-index: 10;
+        }
+
+        #paper-wrapper {
+            position: relative;
+            width: 85vw;
+            max-width: 420px;
+            height: 200px;
+            perspective: 1200px;
+            z-index: 20;
+        }
+
+        #paper {
+            background: var(--paper);
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-shadow:
+                0 4px 20px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 0 80px rgba(0, 0, 0, 0.03);
+            transform-origin: top center;
+            position: absolute;
+            transition: box-shadow 0.3s;
+        }
+
+        #paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(0deg,
+                    transparent 0px,
+                    transparent 27px,
+                    rgba(0, 150, 255, 0.1) 27px,
+                    rgba(0, 150, 255, 0.1) 28px);
+            pointer-events: none;
+        }
+
+        #paper.typing {
+            box-shadow:
+                0 8px 40px rgba(255, 102, 0, 0.2),
+                0 0 0 2px var(--hazard),
+                inset 0 0 80px rgba(0, 0, 0, 0.03);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.1rem;
+            resize: none;
+            outline: none;
+            color: #1a1a1a;
+            line-height: 28px;
+        }
+
+        textarea::placeholder {
+            color: #aaa;
+        }
+
+        /* BUTTON */
+        #shred-btn {
+            position: fixed;
+            bottom: 170px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, var(--hazard) 0%, #cc5200 100%);
+            color: #000;
+            border: none;
+            padding: 18px 50px;
+            font-family: 'Black Ops One';
+            font-size: 1.3rem;
+            cursor: pointer;
+            z-index: 80;
+            clip-path: polygon(8% 0, 100% 0, 100% 75%, 92% 100%, 0 100%, 0 25%);
+            box-shadow: 0 0 40px var(--hazard), inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.15s;
+            letter-spacing: 2px;
+        }
+
+        #shred-btn:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 0 60px var(--hazard), inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        #shred-btn:active,
+        #shred-btn.active {
+            transform: translateX(-50%) scale(0.95);
+            background: linear-gradient(180deg, #fff 0%, var(--hazard) 100%);
+        }
+
+        #shred-btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* KEYBOARD HINT */
+        #key-hint {
+            position: fixed;
+            bottom: 260px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: #888;
+            z-index: 80;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #key-hint kbd {
+            background: #222;
+            padding: 3px 8px;
+            border-radius: 3px;
+            border: 1px solid #444;
+            color: #aaa;
+        }
+
+        /* MACHINE */
+        #machine {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 130px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%);
+            z-index: 60;
+            border-top: 3px solid #333;
+            overflow: hidden;
+            transition: transform 0.05s;
+        }
+
+        #machine.shaking {
+            animation: machineShake 0.1s linear infinite;
+        }
+
+        @keyframes machineShake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-2px) translateY(-1px);
+            }
+
+            50% {
+                transform: translateX(2px);
+            }
+
+            75% {
+                transform: translateX(-1px) translateY(1px);
+            }
+        }
+
+        #machine::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+        }
+
+        .teeth {
+            position: absolute;
+            top: 0;
+            left: -10%;
+            width: 120%;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .tooth {
+            width: 20px;
+            height: 35px;
+            background: linear-gradient(180deg, #444 0%, #222 100%);
+            margin: 0 8px;
+            clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+            transform-origin: top center;
+        }
+
+        .teeth.bottom {
+            top: 25px;
+        }
+
+        .teeth.bottom .tooth {
+            clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+            transform-origin: bottom center;
+        }
+
+        /* SHRED PILE */
+        #pile-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 55;
+            overflow: hidden;
+        }
+
+        .shred {
+            position: absolute;
+            bottom: -50px;
+            width: 8px;
+            background: linear-gradient(180deg, var(--paper) 0%, #ddd 100%);
+            border-radius: 1px;
+            transform-origin: top center;
+            box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .shred.dark {
+            background: linear-gradient(180deg, #ccc 0%, #999 100%);
+        }
+
+        .shred.ink {
+            background: linear-gradient(180deg, #333 0%, #111 100%);
+        }
+
+        /* PARTICLES CANVAS */
+        #fx {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 70;
+        }
+
+        /* WORD COUNT */
+        #word-stats {
+            position: fixed;
+            bottom: 140px;
+            left: 15px;
+            font-size: 0.55rem;
+            color: #777;
+            z-index: 100;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.8;
+        }
+
+        #word-stats span {
+            color: #999;
+            font-weight: 700;
+        }
+
+        /* HOLD PROGRESS */
+        #hold-ring {
+            position: fixed;
+            bottom: 185px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            z-index: 79;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        #hold-ring.show {
+            opacity: 1;
+        }
+
+        #hold-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        #hold-ring circle {
+            fill: none;
+            stroke-width: 4;
+        }
+
+        #hold-ring .bg {
+            stroke: #333;
+        }
+
+        #hold-ring .progress {
+            stroke: var(--hazard);
+            stroke-dasharray: 226;
+            stroke-dashoffset: 226;
+            transition: stroke-dashoffset 0.1s linear;
+            filter: drop-shadow(0 0 10px var(--hazard));
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 500px) {
+            #count {
+                font-size: 2.2rem;
+            }
+
+            #paper-wrapper {
+                height: 160px;
+            }
+
+            #shred-btn {
+                padding: 15px 35px;
+                font-size: 1.1rem;
+                bottom: 190px;
+            }
+
+            #key-hint {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <a href="../rotbox" id="back-link">&lt; ROT BOX</a>
+
+    <div id="scan"></div>
+
+    <div id="stats">
+        <div id="count">0</div>
+        <div id="stats-label">obliterated</div>
+    </div>
+
+    <div id="combo-container">
+        <div id="combo">2X COMBO</div>
+    </div>
+
+    <div id="streak-container">
+        <div id="streak-label">Overdrive</div>
+        <div id="streak-bar">
+            <div id="streak-fill"></div>
+        </div>
+    </div>
+
+    <div id="msg-container">
+        <div id="void-message">
+            <h3>VOID_LOG:</h3>
+            <p id="msg-text">...</p>
+        </div>
+    </div>
+
+    <div id="achievement">
+        <h2 id="achieve-title">ACHIEVEMENT</h2>
+        <p id="achieve-desc">Unlocked</p>
+    </div>
+
+    <div id="stage">
+        <div id="paper-wrapper">
+            <div id="paper">
+                <textarea id="text-input" placeholder="TYPE YOUR SECRETS..." spellcheck="false"
+                    autocomplete="off"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="key-hint">Press <kbd>ENTER</kbd> to shred</div>
+
+    <div id="hold-ring">
+        <svg width="80" height="80">
+            <circle class="bg" cx="40" cy="40" r="36" />
+            <circle class="progress" cx="40" cy="40" r="36" />
+        </svg>
+    </div>
+
+    <button id="shred-btn">SHRED IT</button>
+
+    <div id="word-stats">
+        Words destroyed: <span id="word-count">0</span><br>
+        Characters vaporized: <span id="char-count">0</span>
+    </div>
+
+    <div id="pile-container"></div>
+
+    <div id="machine">
+        <div class="teeth top" id="teeth-top"></div>
+        <div class="teeth bottom" id="teeth-bottom"></div>
+    </div>
+
+    <canvas id="fx"></canvas>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // CONFIG
+        // ═══════════════════════════════════════════════════════════════
+        const ROASTS = [
+            "Purged from existence.",
+            "The void accepts your offering.",
+            "Nobody saw that. Probably.",
+            "Cringe levels: NEUTRALIZED",
+            "Your secrets feed the machine.",
+            "Deleted harder than your ex's number.",
+            "The FBI agent is impressed.",
+            "Gone. Reduced to atoms.",
+            "That never happened.",
+            "Shredded with extreme prejudice.",
+            "Into the void it goes...",
+            "Another one bites the dust.",
+            "Obliterated. You're welcome.",
+            "The void hungers for more.",
+            "MAXIMUM DESTRUCTION",
+            "Paper go brrrrrr",
+            "Cathartic, isn't it?",
+            "Your therapist would approve.",
+            "Violence against paper: JUSTIFIED",
+            "The machine is pleased."
+        ];
+
+        const ACHIEVEMENTS = {
+            first: { title: "FIRST BLOOD", desc: "Your first destruction", threshold: 1 },
+            ten: { title: "GETTING WARMED UP", desc: "10 secrets destroyed", threshold: 10 },
+            fifty: { title: "VOID APPRENTICE", desc: "50 papers shredded", threshold: 50 },
+            hundred: { title: "CENTURION", desc: "100 obliterations", threshold: 100 },
+            fiveHundred: { title: "VOID MASTER", desc: "500 destructions", threshold: 500 },
+            thousand: { title: "LEGENDARY SHREDDER", desc: "1000 papers gone", threshold: 1000 },
+            combo5: { title: "COMBO STARTER", desc: "5x combo achieved", threshold: 5, type: 'combo' },
+            combo10: { title: "COMBO KING", desc: "10x combo achieved", threshold: 10, type: 'combo' },
+            speed: { title: "SPEED DEMON", desc: "3 shreds in 2 seconds", threshold: 3, type: 'speed' }
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // STATE
+        // ═══════════════════════════════════════════════════════════════
+        let count = parseInt(localStorage.getItem('shredCount')) || 0;
+        let totalWords = parseInt(localStorage.getItem('wordCount')) || 0;
+        let totalChars = parseInt(localStorage.getItem('charCount')) || 0;
+        let unlockedAchievements = JSON.parse(localStorage.getItem('achievements') || '[]');
+        let combo = 0;
+        let maxCombo = parseInt(localStorage.getItem('maxCombo')) || 0;
+        let lastShredTime = 0;
+        let recentShreds = [];
+        let isOverdrive = false;
+        let isShredding = false;
+        let streakDecayTimer = null;
+        let holdTimer = null;
+        let holdProgress = 0;
+
+        const shreds = [];
+        const MAX_SHREDS = 300;
+
+        // ═══════════════════════════════════════════════════════════════
+        // DOM
+        // ═══════════════════════════════════════════════════════════════
+        const ui = {
+            count: document.getElementById('count'),
+            combo: document.getElementById('combo'),
+            streakFill: document.getElementById('streak-fill'),
+            input: document.getElementById('text-input'),
+            paper: document.getElementById('paper'),
+            btn: document.getElementById('shred-btn'),
+            msg: document.getElementById('void-message'),
+            msgText: document.getElementById('msg-text'),
+            pile: document.getElementById('pile-container'),
+            achievement: document.getElementById('achievement'),
+            achieveTitle: document.getElementById('achieve-title'),
+            achieveDesc: document.getElementById('achieve-desc'),
+            wordCount: document.getElementById('word-count'),
+            charCount: document.getElementById('char-count'),
+            teethTop: document.getElementById('teeth-top'),
+            teethBottom: document.getElementById('teeth-bottom'),
+            holdRing: document.getElementById('hold-ring'),
+            holdProgress: document.querySelector('#hold-ring .progress')
+        };
+
+        // Initialize
+        ui.count.textContent = count;
+        ui.wordCount.textContent = totalWords.toLocaleString();
+        ui.charCount.textContent = totalChars.toLocaleString();
+
+        // Create teeth
+        for (let i = 0; i < 20; i++) {
+            const tooth1 = document.createElement('div');
+            tooth1.className = 'tooth';
+            ui.teethTop.appendChild(tooth1);
+
+            const tooth2 = document.createElement('div');
+            tooth2.className = 'tooth';
+            ui.teethBottom.appendChild(tooth2);
+        }
+
+        // Restore pile from count
+        if (count > 0) {
+            const initialShreds = Math.min(count * 3, MAX_SHREDS);
+            for (let i = 0; i < initialShreds; i++) {
+                createShred(true);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CANVAS PARTICLES
+        // ═══════════════════════════════════════════════════════════════
+        const canvas = document.getElementById('fx');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(x, y, options = {}) {
+                this.x = x;
+                this.y = y;
+                this.vx = options.vx || (Math.random() - 0.5) * 20;
+                this.vy = options.vy || -(Math.random() * 15 + 5);
+                this.life = 1;
+                this.decay = options.decay || 0.02;
+                this.type = options.type || 'rect';
+                this.char = options.char || '';
+                this.color = options.color || '#fff';
+                this.size = options.size || Math.random() * 6 + 3;
+                this.rot = Math.random() * 360;
+                this.vRot = (Math.random() - 0.5) * 15;
+                this.gravity = options.gravity ?? 0.6;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.vx *= 0.99;
+                this.rot += this.vRot;
+                this.life -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rot * Math.PI / 180);
+                ctx.globalAlpha = this.life;
+
+                if (this.type === 'text') {
+                    ctx.fillStyle = this.color;
+                    ctx.font = `bold ${this.size}px monospace`;
+                    ctx.fillText(this.char, -this.size / 4, this.size / 4);
+                } else if (this.type === 'spark') {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 1.5);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function spawnParticles(text) {
+            const y = window.innerHeight - 130;
+            const centerX = window.innerWidth / 2;
+
+            // Text particles
+            const chars = text.split('').filter(c => c.trim()).slice(0, 30);
+            chars.forEach((char, i) => {
+                particles.push(new Particle(
+                    centerX + (Math.random() - 0.5) * 200,
+                    y,
+                    {
+                        type: 'text',
+                        char: char,
+                        color: '#222',
+                        size: 18,
+                        vx: (Math.random() - 0.5) * 25,
+                        vy: -(Math.random() * 20 + 8),
+                        decay: 0.015
+                    }
+                ));
+            });
+
+            // Paper confetti
+            const confettiCount = isOverdrive ? 80 : 50;
+            for (let i = 0; i < confettiCount; i++) {
+                const colors = isOverdrive
+                    ? ['#ff0040', '#ff6600', '#fff', '#ffcc00']
+                    : ['#fff', '#f5f5f0', '#ddd', '#ccc'];
+                particles.push(new Particle(
+                    centerX + (Math.random() - 0.5) * 150,
+                    y,
+                    {
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        size: Math.random() * 8 + 4,
+                        vx: (Math.random() - 0.5) * 30,
+                        vy: -(Math.random() * 25 + 10),
+                        decay: 0.012
+                    }
+                ));
+            }
+
+            // Sparks in overdrive
+            if (isOverdrive) {
+                for (let i = 0; i < 20; i++) {
+                    particles.push(new Particle(
+                        centerX + (Math.random() - 0.5) * 100,
+                        y,
+                        {
+                            type: 'spark',
+                            color: '#ff6600',
+                            size: Math.random() * 3 + 1,
+                            vx: (Math.random() - 0.5) * 40,
+                            vy: -(Math.random() * 30 + 15),
+                            decay: 0.03,
+                            gravity: 0.3
+                        }
+                    ));
+                }
+            }
+        }
+
+        function particleLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(particleLoop);
+        }
+        particleLoop();
+
+        // ═══════════════════════════════════════════════════════════════
+        // SHRED PILE
+        // ═══════════════════════════════════════════════════════════════
+        function createShred(instant = false) {
+            if (shreds.length >= MAX_SHREDS) {
+                const oldest = shreds.shift();
+                oldest.el.remove();
+            }
+
+            const shred = document.createElement('div');
+            shred.className = 'shred';
+
+            // Random darkness
+            if (Math.random() > 0.7) shred.classList.add('dark');
+            if (Math.random() > 0.9) shred.classList.add('ink');
+
+            const x = Math.random() * window.innerWidth;
+            const height = Math.random() * 40 + 20;
+            const rotation = (Math.random() - 0.5) * 30;
+
+            shred.style.left = x + 'px';
+            shred.style.height = height + 'px';
+            shred.style.transform = `rotate(${rotation}deg)`;
+
+            if (instant) {
+                // Instant placement for restored pile
+                const baseHeight = Math.random() * 80;
+                shred.style.bottom = baseHeight + 'px';
+                shred.style.opacity = '1';
+            } else {
+                // Animated drop
+                shred.style.bottom = (window.innerHeight + 50) + 'px';
+                shred.style.transition = 'bottom 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s';
+
+                ui.pile.appendChild(shred);
+
+                requestAnimationFrame(() => {
+                    const targetBottom = Math.random() * Math.min(shreds.length * 1.5, 100) + 10;
+                    shred.style.bottom = targetBottom + 'px';
+                });
+            }
+
+            ui.pile.appendChild(shred);
+            shreds.push({ el: shred });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // AUDIO
+        // ═══════════════════════════════════════════════════════════════
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playShredSound() {
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const duration = isOverdrive ? 0.25 : 0.35;
+
+            // Base grinding
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = isOverdrive ? 'sawtooth' : 'square';
+            osc.frequency.setValueAtTime(isOverdrive ? 120 : 80, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + duration);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+
+            // Crunch noise
+            const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseData.length; i++) {
+                noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseData.length);
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const noiseGain = audioCtx.createGain();
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = isOverdrive ? 3000 : 2000;
+            noiseGain.gain.setValueAtTime(0.4, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start(now);
+
+            // Impact thud
+            const thud = audioCtx.createOscillator();
+            const thudGain = audioCtx.createGain();
+            thud.type = 'sine';
+            thud.frequency.setValueAtTime(60, now);
+            thud.frequency.exponentialRampToValueAtTime(20, now + 0.1);
+            thudGain.gain.setValueAtTime(0.3, now);
+            thudGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            thud.connect(thudGain);
+            thudGain.connect(audioCtx.destination);
+            thud.start(now);
+            thud.stop(now + 0.1);
+        }
+
+        function playAchievementSound() {
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            [440, 554, 659, 880].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, now + i * 0.1);
+                gain.gain.linearRampToValueAtTime(0.15, now + i * 0.1 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + i * 0.1);
+                osc.stop(now + i * 0.1 + 0.3);
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // ANIMATIONS
+        // ═══════════════════════════════════════════════════════════════
+        function shake(intensity = 10) {
+            const keyframes = [
+                { transform: `translate(${-intensity}px, ${intensity / 2}px)` },
+                { transform: `translate(${intensity}px, ${-intensity / 2}px)` },
+                { transform: `translate(${-intensity / 2}px, ${intensity / 3}px)` },
+                { transform: `translate(${intensity / 2}px, ${-intensity / 3}px)` },
+                { transform: 'translate(0, 0)' }
+            ];
+            document.body.animate(keyframes, { duration: 150, easing: 'ease-out' });
+        }
+
+        function flash() {
+            document.body.classList.add('flash');
+            setTimeout(() => document.body.classList.remove('flash'), 50);
+        }
+
+        function animateTeeth() {
+            const teeth = document.querySelectorAll('.tooth');
+            const machine = document.getElementById('machine');
+
+            // Add machine shake
+            machine.classList.add('shaking');
+            setTimeout(() => machine.classList.remove('shaking'), isOverdrive ? 400 : 300);
+
+            teeth.forEach((tooth, i) => {
+                const isTop = tooth.parentElement.classList.contains('top');
+                const delay = (i % 5) * 15;
+                const moveAmount = isOverdrive ? 12 : 10;
+                const rotateAmount = isOverdrive ? 8 : 5;
+
+                tooth.animate([
+                    { transform: isTop ? 'translateY(0) rotate(0deg)' : 'translateY(0) rotate(0deg)' },
+                    { transform: isTop ? `translateY(${moveAmount}px) rotate(${rotateAmount}deg)` : `translateY(-${moveAmount}px) rotate(-${rotateAmount}deg)` },
+                    { transform: isTop ? 'translateY(2px) rotate(-2deg)' : 'translateY(-2px) rotate(2deg)' },
+                    { transform: isTop ? `translateY(${moveAmount - 2}px) rotate(${rotateAmount - 2}deg)` : `translateY(-${moveAmount - 2}px) rotate(-${rotateAmount - 2}deg)` },
+                    { transform: isTop ? 'translateY(0) rotate(0deg)' : 'translateY(0) rotate(0deg)' }
+                ], {
+                    duration: isOverdrive ? 200 : 250,
+                    delay: delay,
+                    easing: 'ease-in-out'
+                });
+            });
+        }
+
+        function popCount() {
+            ui.count.classList.add('pop');
+            setTimeout(() => ui.count.classList.remove('pop'), 100);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // MESSAGES & ACHIEVEMENTS
+        // ═══════════════════════════════════════════════════════════════
+        let msgTimeout = null;
+
+        function showMessage(text) {
+            const msg = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+            ui.msgText.textContent = msg;
+
+            clearTimeout(msgTimeout);
+
+            ui.msg.animate([
+                { opacity: 0, transform: 'translateY(20px) scale(0.9)' },
+                { opacity: 1, transform: 'translateY(0) scale(1)' }
+            ], { duration: 200, fill: 'forwards', easing: 'ease-out' });
+
+            msgTimeout = setTimeout(() => {
+                ui.msg.animate([
+                    { opacity: 1, transform: 'translateY(0) scale(1)' },
+                    { opacity: 0, transform: 'translateY(10px) scale(0.95)' }
+                ], { duration: 150, fill: 'forwards', easing: 'ease-in' });
+            }, 2500);
+        }
+
+        function showAchievement(key, achievement) {
+            if (unlockedAchievements.includes(key)) return;
+
+            unlockedAchievements.push(key);
+            localStorage.setItem('achievements', JSON.stringify(unlockedAchievements));
+
+            ui.achieveTitle.textContent = achievement.title;
+            ui.achieveDesc.textContent = achievement.desc;
+
+            playAchievementSound();
+
+            ui.achievement.animate([
+                { opacity: 0, transform: 'translate(-50%, -50%) scale(0)' },
+                { opacity: 1, transform: 'translate(-50%, -50%) scale(1.1)' },
+                { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }
+            ], { duration: 400, fill: 'forwards', easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' });
+
+            setTimeout(() => {
+                ui.achievement.animate([
+                    { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },
+                    { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' }
+                ], { duration: 300, fill: 'forwards', easing: 'ease-in' });
+            }, 2500);
+        }
+
+        function checkAchievements() {
+            for (const [key, achievement] of Object.entries(ACHIEVEMENTS)) {
+                if (unlockedAchievements.includes(key)) continue;
+
+                if (achievement.type === 'combo') {
+                    if (combo >= achievement.threshold) {
+                        showAchievement(key, achievement);
+                    }
+                } else if (achievement.type === 'speed') {
+                    if (recentShreds.length >= achievement.threshold) {
+                        const timeDiff = recentShreds[recentShreds.length - 1] - recentShreds[0];
+                        if (timeDiff <= 2000) {
+                            showAchievement(key, achievement);
+                        }
+                    }
+                } else {
+                    if (count >= achievement.threshold) {
+                        showAchievement(key, achievement);
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // COMBO & STREAK
+        // ═══════════════════════════════════════════════════════════════
+        function updateCombo() {
+            const now = Date.now();
+
+            if (now - lastShredTime < 3000) {
+                combo++;
+                if (combo > maxCombo) {
+                    maxCombo = combo;
+                    localStorage.setItem('maxCombo', maxCombo);
+                }
+            } else {
+                combo = 1;
+            }
+
+            // Track recent shreds for speed achievement
+            recentShreds.push(now);
+            recentShreds = recentShreds.filter(t => now - t < 3000);
+
+            lastShredTime = now;
+
+            // Update combo display
+            if (combo >= 2) {
+                ui.combo.textContent = combo >= 10 ? `${combo}X MEGA COMBO!` : `${combo}X COMBO`;
+                ui.combo.classList.add('show');
+                ui.combo.classList.toggle('mega', combo >= 10);
+
+                // Animate combo
+                ui.combo.animate([
+                    { transform: 'scale(1.3)' },
+                    { transform: 'scale(1)' }
+                ], { duration: 200, easing: 'ease-out' });
+            }
+
+            // Reset combo decay
+            clearTimeout(streakDecayTimer);
+            streakDecayTimer = setTimeout(() => {
+                combo = 0;
+                ui.combo.classList.remove('show', 'mega');
+            }, 3000);
+
+            // Streak bar
+            const pct = Math.min((combo / 10) * 100, 100);
+            ui.streakFill.style.width = pct + '%';
+
+            // Overdrive mode
+            if (combo >= 5 && !isOverdrive) {
+                isOverdrive = true;
+                document.body.classList.add('overdrive');
+            } else if (combo < 5 && isOverdrive) {
+                isOverdrive = false;
+                document.body.classList.remove('overdrive');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CORE SHRED
+        // ═══════════════════════════════════════════════════════════════
+        function shred() {
+            const text = ui.input.value.trim();
+            if (!text || isShredding) {
+                if (!text) {
+                    ui.paper.animate([
+                        { transform: 'translateX(-5px)' },
+                        { transform: 'translateX(5px)' },
+                        { transform: 'translateX(-3px)' },
+                        { transform: 'translateX(3px)' },
+                        { transform: 'translateX(0)' }
+                    ], { duration: 200 });
+                }
+                return;
+            }
+
+            isShredding = true;
+            ui.btn.disabled = true;
+            initAudio();
+
+            // Count words and chars
+            const words = text.split(/\s+/).filter(w => w.length > 0).length;
+            const chars = text.length;
+            totalWords += words;
+            totalChars += chars;
+            localStorage.setItem('wordCount', totalWords);
+            localStorage.setItem('charCount', totalChars);
+            ui.wordCount.textContent = totalWords.toLocaleString();
+            ui.charCount.textContent = totalChars.toLocaleString();
+
+            // Update combo
+            updateCombo();
+
+            const duration = isOverdrive ? 350 : 500;
+
+            // Animate paper down
+            ui.paper.animate([
+                { transform: 'translateY(0) rotate(0deg) scale(1)', opacity: 1 },
+                { transform: `translateY(${window.innerHeight - 250}px) rotate(${(Math.random() - 0.5) * 10}deg) scale(0.85)`, opacity: 1, offset: 0.7 },
+                { transform: `translateY(${window.innerHeight - 200}px) rotate(0deg) scale(0.7)`, opacity: 0 }
+            ], {
+                duration: duration,
+                easing: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
+                fill: 'forwards'
+            }).onfinish = () => impact(text);
+        }
+
+        function impact(text) {
+            // Effects
+            playShredSound();
+            shake(isOverdrive ? 15 : 8);
+            flash();
+            animateTeeth();
+            spawnParticles(text);
+
+            // Haptic
+            if (navigator.vibrate) {
+                navigator.vibrate(isOverdrive ? [30, 20, 30, 20, 30] : [40]);
+            }
+
+            // Create shreds
+            const shredCount = Math.min(Math.ceil(text.length / 3), 15) + 3;
+            for (let i = 0; i < shredCount; i++) {
+                setTimeout(() => createShred(), i * 30);
+            }
+
+            // Update count
+            count++;
+            localStorage.setItem('shredCount', count);
+            ui.count.textContent = count;
+            popCount();
+
+            // Check achievements
+            checkAchievements();
+
+            // Show message
+            setTimeout(() => showMessage(text), 150);
+
+            // Reset
+            setTimeout(reset, isOverdrive ? 200 : 400);
+        }
+
+        function reset() {
+            ui.input.value = '';
+
+            // Reset paper position
+            ui.paper.style.transform = 'translateY(-100vh)';
+            ui.paper.style.opacity = '1';
+
+            // Animate back
+            setTimeout(() => {
+                ui.paper.animate([
+                    { transform: 'translateY(-100vh) rotate(-5deg)', opacity: 0 },
+                    { transform: 'translateY(10px) rotate(2deg)', opacity: 1 },
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 }
+                ], {
+                    duration: 400,
+                    easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    fill: 'forwards'
+                }).onfinish = () => {
+                    isShredding = false;
+                    ui.btn.disabled = false;
+                    ui.input.focus();
+                };
+            }, 50);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EVENT LISTENERS
+        // ═══════════════════════════════════════════════════════════════
+        ui.btn.addEventListener('click', shred);
+        ui.btn.addEventListener('touchstart', () => ui.btn.classList.add('active'));
+        ui.btn.addEventListener('touchend', () => ui.btn.classList.remove('active'));
+
+        // Keyboard support
+        ui.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                shred();
+            }
+        });
+
+        // Typing indicator
+        ui.input.addEventListener('input', () => {
+            ui.paper.classList.toggle('typing', ui.input.value.length > 0);
+        });
+
+        // Focus on load
+        setTimeout(() => ui.input.focus(), 100);
+
+        // Prevent zoom on double tap
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Init audio on first interaction
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
+    </script>
+</body>
+
+</html>
