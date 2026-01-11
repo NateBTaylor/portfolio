@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LOVE.EXE // COMPILER</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+        :root {
+            --bg: #0a0608;
+            --bg-secondary: #120a0e;
+            --text: #e8e0e4;
+            --text-muted: #8a7a82;
+            --accent: #ff1a5c;
+            --accent-soft: #ff4d7f;
+            --highlight: #ffa0bc;
+            --gold: #d4a574;
+            --input-bg: rgba(255, 26, 92, 0.08);
+            --border: rgba(255, 26, 92, 0.2);
+            --glow: rgba(255, 26, 92, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text);
+            min-height: 100dvh;
+            width: 100%;
+            overflow-x: hidden;
+            overscroll-behavior: none;
+            position: relative;
+        }
+
+        /* Atmospheric Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(255, 26, 92, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(212, 165, 116, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse 100% 100% at 50% 100%, rgba(255, 26, 92, 0.03) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Noise texture overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Canvas layers */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #hearts-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Main content wrapper */
+        .main-wrapper {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 120px;
+        }
+
+        /* Navigation */
+        #nav {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.7rem;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 16px;
+            background: rgba(10, 6, 8, 0.8);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 1px;
+        }
+
+        #nav:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateX(-3px);
+            box-shadow: 0 0 20px var(--glow);
+        }
+
+        /* Progress indicator */
+        #progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--gold));
+            width: 0%;
+            z-index: 200;
+            transition: width 0.4s ease-out;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 60px 20px 30px;
+            position: relative;
+        }
+
+        .logo-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            font-weight: 800;
+            color: var(--accent);
+            margin: 0;
+            letter-spacing: -2px;
+            position: relative;
+            animation: glowPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                text-shadow: 0 0 20px var(--glow), 0 0 40px rgba(255, 26, 92, 0.2);
+            }
+
+            50% {
+                text-shadow: 0 0 30px var(--glow), 0 0 60px rgba(255, 26, 92, 0.3), 0 0 80px rgba(255, 26, 92, 0.1);
+            }
+        }
+
+        h1::before {
+            content: 'LOVE.EXE';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--highlight);
+            opacity: 0;
+            animation: glitch 8s infinite;
+        }
+
+        @keyframes glitch {
+
+            0%,
+            96%,
+            100% {
+                opacity: 0;
+                transform: translate(0);
+            }
+
+            97% {
+                opacity: 0.8;
+                transform: translate(-2px, 1px);
+            }
+
+            98% {
+                opacity: 0.4;
+                transform: translate(2px, -1px);
+            }
+
+            99% {
+                opacity: 0.6;
+                transform: translate(-1px, 2px);
+            }
+        }
+
+        .subtitle {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-top: 12px;
+            font-weight: 300;
+        }
+
+        .subtitle span {
+            color: var(--gold);
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            color: var(--highlight);
+            font-weight: 700;
+        }
+
+        /* Selector */
+        #selector-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-size: 0.6rem;
+            pointer-events: none;
+            transition: transform 0.3s;
+        }
+
+        select {
+            width: 100%;
+            padding: 14px 40px 14px 16px;
+            background: var(--bg-secondary);
+            color: var(--text);
+            border: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            transition: all 0.3s;
+            letter-spacing: 0.5px;
+        }
+
+        select:hover,
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(255, 26, 92, 0.15), inset 0 0 20px rgba(255, 26, 92, 0.03);
+        }
+
+        /* Editor Container */
+        #editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .poem-card {
+            background: linear-gradient(145deg, var(--bg-secondary), rgba(18, 10, 14, 0.8));
+            border: 1px solid var(--border);
+            padding: 40px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .poem-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.5;
+        }
+
+        .poem-card::after {
+            content: '"';
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-family: 'Playfair Display', serif;
+            font-size: 6rem;
+            color: var(--accent);
+            opacity: 0.08;
+            line-height: 1;
+        }
+
+        .poem-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .poem-title {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .completion-badge {
+            font-size: 0.6rem;
+            padding: 4px 10px;
+            background: rgba(255, 26, 92, 0.1);
+            border: 1px solid var(--border);
+            color: var(--highlight);
+            letter-spacing: 1px;
+        }
+
+        .completion-badge.complete {
+            background: rgba(100, 255, 150, 0.1);
+            border-color: rgba(100, 255, 150, 0.3);
+            color: #90ffb0;
+        }
+
+        .line {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            line-height: 2.4;
+            margin-bottom: 8px;
+            color: var(--text);
+            position: relative;
+            transition: opacity 0.3s;
+        }
+
+        .line:hover {
+            color: #fff;
+        }
+
+        input {
+            background: var(--input-bg);
+            border: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--highlight);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-align: center;
+            min-width: 80px;
+            max-width: 200px;
+            padding: 4px 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2px;
+            margin: 0 4px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 160, 188, 0.4);
+            font-style: italic;
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(255, 26, 92, 0.15);
+            color: #fff;
+            border-bottom-color: var(--accent);
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(255, 26, 92, 0.2);
+        }
+
+        input.filled {
+            border-bottom-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* Controls */
+        #controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, var(--bg) 80%, transparent);
+            padding: 30px 20px 20px;
+            z-index: 50;
+        }
+
+        .controls-inner {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            padding: 16px 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        #btn-random {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex: 0 0 auto;
+            padding: 16px;
+        }
+
+        #btn-random:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        #btn-inspire {
+            background: var(--bg-secondary);
+            color: var(--highlight);
+            flex: 1;
+            border: 1px solid var(--border);
+        }
+
+        #btn-inspire:hover {
+            background: rgba(255, 26, 92, 0.1);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        #btn-generate {
+            background: linear-gradient(135deg, var(--accent), #cc1048);
+            color: #fff;
+            flex: 2;
+            box-shadow: 0 4px 30px var(--glow);
+        }
+
+        #btn-generate:hover {
+            box-shadow: 0 6px 40px var(--glow), 0 0 60px rgba(255, 26, 92, 0.2);
+            transform: translateY(-2px);
+        }
+
+        #btn-generate:active {
+            transform: translateY(0);
+        }
+
+        /* Result Overlay */
+        #result-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 3, 4, 0.97);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        #final-poem {
+            background: linear-gradient(145deg, #fffef8, #f8f4ec);
+            color: #2a1a1f;
+            padding: 50px;
+            max-width: 90%;
+            width: 480px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.15rem;
+            line-height: 2;
+            box-shadow:
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 26, 92, 0.1),
+                inset 0 0 80px rgba(255, 26, 92, 0.02);
+            transform: translateY(50px);
+            position: relative;
+        }
+
+        #final-poem::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        #final-poem h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            margin: 0 0 25px 0;
+            color: #999;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e0dcd4;
+            padding-bottom: 20px;
+            letter-spacing: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #final-poem h2 span {
+            font-size: 0.5rem;
+            color: var(--accent);
+        }
+
+        #poem-content div {
+            margin-bottom: 4px;
+        }
+
+        .filled-word {
+            color: #c41045;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        .poem-footer {
+            margin-top: 35px;
+            padding-top: 20px;
+            border-top: 1px solid #e0dcd4;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.5rem;
+            color: #aaa;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Action buttons in overlay */
+        .overlay-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .overlay-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            font-size: 0.7rem;
+        }
+
+        .overlay-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .overlay-btn.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .overlay-btn.primary:hover {
+            background: #cc1048;
+        }
+
+        /* Toast notification */
+        #toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--bg-secondary);
+            color: var(--text);
+            padding: 14px 28px;
+            border: 1px solid var(--border);
+            font-size: 0.75rem;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #toast.success {
+            border-color: rgba(100, 255, 150, 0.5);
+            box-shadow: 0 0 20px rgba(100, 255, 150, 0.2);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            header {
+                padding: 70px 20px 20px;
+            }
+
+            .poem-card {
+                padding: 25px 20px;
+            }
+
+            .poem-card::after {
+                font-size: 4rem;
+                top: 10px;
+                left: 15px;
+            }
+
+            .line {
+                font-size: 1.1rem;
+                line-height: 2.2;
+            }
+
+            input {
+                font-size: 0.8rem;
+                min-width: 60px;
+            }
+
+            .controls-inner {
+                flex-wrap: wrap;
+            }
+
+            #btn-random {
+                order: 3;
+                flex: 1;
+            }
+
+            #btn-inspire {
+                flex: 1;
+                order: 1;
+            }
+
+            #btn-generate {
+                flex: 100%;
+                order: 2;
+            }
+
+            #final-poem {
+                padding: 30px 25px;
+                font-size: 1rem;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Loading state */
+        .loading {
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 26, 92, 0.1), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="progress-bar"></div>
+    <a href="../rotbox" id="nav">&larr; EXIT</a>
+
+    <canvas id="particles"></canvas>
+    <canvas id="hearts-canvas"></canvas>
+
+    <div class="main-wrapper">
+        <header>
+            <div class="logo-container">
+                <h1>LOVE.EXE</h1>
+            </div>
+            <div class="subtitle">Romantic Protocol <span>v3.0</span> // Poetry Compiler</div>
+            <div class="stats-bar">
+                <div class="stat">
+                    <span>TEMPLATES</span>
+                    <span class="stat-value" id="template-count">20</span>
+                </div>
+                <div class="stat">
+                    <span>FIELDS</span>
+                    <span class="stat-value" id="field-count">0</span>
+                </div>
+                <div class="stat">
+                    <span>COMPLETED</span>
+                    <span class="stat-value" id="completed-count">0%</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="selector-container">
+            <div class="select-wrapper">
+                <select id="poem-selector" onchange="loadSelectedTemplate()"></select>
+            </div>
+        </div>
+
+        <div id="editor-container">
+            <div id="template-area" class="poem-card">
+                <div class="poem-header">
+                    <span class="poem-title" id="current-poem-title">Loading...</span>
+                    <span class="completion-badge" id="completion-badge">0/0</span>
+                </div>
+                <div id="lines-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <div class="controls-inner">
+            <button id="btn-random" onclick="randomPoem()" title="Random Poem">&#x1F3B2;</button>
+            <button id="btn-inspire" onclick="inspireMode()">&#x2728; Remix</button>
+            <button id="btn-generate" onclick="generate()">Compile Poem</button>
+        </div>
+    </div>
+
+    <div id="result-overlay">
+        <div id="final-poem">
+            <h2>
+                <span>Compiled Output</span>
+                <span id="poem-date"></span>
+            </h2>
+            <div id="poem-content"></div>
+            <div class="poem-footer">Generated by LOVE.EXE</div>
+        </div>
+        <div class="overlay-actions">
+            <button class="overlay-btn" onclick="copyPoem()">&#x1F4CB; Copy</button>
+            <button class="overlay-btn" onclick="downloadImage()">&#x1F4F7; Save Image</button>
+            <button class="overlay-btn" onclick="sharePoem()">&#x1F48C; Share</button>
+            <button class="overlay-btn primary" onclick="closeResult()">&larr; Edit</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // --- DATABASE (20 POEMS) ---
+        const Templates = [
+            {
+                title: "How Do I Love Thee? // Browning",
+                text: [
+                    "How do I love thee? Let me count the {ways|plural_noun_ways}.",
+                    "I love thee to the depth and {breadth|noun_dimension} and height",
+                    "My soul can reach, when feeling out of {sight|noun_sense}",
+                    "For the ends of being and ideal {Grace|noun_virtue}.",
+                    "I love thee with the breath,",
+                    "Smiles, tears, of all my {life|noun_time}."
+                ]
+            },
+            {
+                title: "She Walks in Beauty // Byron",
+                text: [
+                    "She walks in beauty, like the {night|noun_darkness}",
+                    "Of cloudless climes and {starry|adjective} skies;",
+                    "And all that's best of dark and {bright|noun_light}",
+                    "Meet in her aspect and her {eyes|body_part_eyes}.",
+                    "One shade the more, one ray the {less|adjective_amount}",
+                    "Had half impaired the nameless {grace|noun_quality}."
+                ]
+            },
+            {
+                title: "A Red, Red Rose // Burns",
+                text: [
+                    "O my Luve is like a red, red {rose|noun_flower}",
+                    "That's newly sprung in {June|month};",
+                    "O my Luve is like the {melody|noun_music}",
+                    "That's sweetly played in tune.",
+                    "So {fair|adjective} art thou, my bonnie lass,",
+                    "So deep in luve am {I|pronoun_I}."
+                ]
+            },
+            {
+                title: "I Wandered Lonely... // Wordsworth",
+                text: [
+                    "I wandered lonely as a {cloud|noun_nature_object}",
+                    "That floats on high o'er vales and {hills|plural_noun_place},",
+                    "When all at once I saw a crowd,",
+                    "A host, of golden {daffodils|plural_noun_flower};",
+                    "Continuous as the {stars|noun_celestial} that shine",
+                    "And twinkle on the milky way."
+                ]
+            },
+            {
+                title: "Sonnet 18 // Shakespeare",
+                text: [
+                    "Shall I compare thee to a {summer's day|noun_season}?",
+                    "Thou art more lovely and more {temperate|adjective}.",
+                    "Rough winds do shake the darling {buds|plural_noun_nature} of May,",
+                    "And summer's {lease|noun_time} hath all too short a date.",
+                    "But thy eternal {summer|noun_season} shall not fade."
+                ]
+            },
+            {
+                title: "To My Dear Husband // Bradstreet",
+                text: [
+                    "If ever two were {one|number}, then surely we.",
+                    "If ever man were loved by {wife|noun_role}, then thee;",
+                    "If ever wife was happy in a {man|noun_role},",
+                    "Compare with me ye women if you can.",
+                    "I prize thy love more than whole mines of {gold|material}."
+                ]
+            },
+            {
+                title: "i carry your heart // Cummings",
+                text: [
+                    "i carry your heart with me (i carry it in",
+                    "my {heart|body_part}) i am never without it (anywhere",
+                    "i go you go, my {dear|term_of_endearment}; and whatever is done",
+                    "by only me is your doing, my {darling|noun_sweetness})",
+                    "i fear no fate (for you are my {fate|noun_concept}, my sweet)",
+                    "i want no world (for beautiful you are my {world|noun_place})"
+                ]
+            },
+            {
+                title: "Valentine // Duffy",
+                text: [
+                    "Not a red rose or a satin heart.",
+                    "I give you an {onion|noun_object}.",
+                    "It is a moon wrapped in brown {paper|material}.",
+                    "It promises light",
+                    "like the careful undressing of {love|noun_emotion}.",
+                    "Here. It will blind you with {tears|plural_noun_liquid}."
+                ]
+            },
+            {
+                title: "Love After Love // Walcott",
+                text: [
+                    "The time will come",
+                    "when, with elation",
+                    "you will greet yourself arriving",
+                    "at your own {door|noun_place}, in your own mirror",
+                    "and each will smile at the other's welcome,",
+                    "and say, sit here. Eat.",
+                    "You will love again the {stranger|noun_role} who was your self."
+                ]
+            },
+            {
+                title: "Annabel Lee // Poe",
+                text: [
+                    "It was many and many a {year|noun_timeframe} ago,",
+                    "In a kingdom by the {sea|noun_body_of_water},",
+                    "That a maiden there lived whom you may know",
+                    "By the name of {Annabel Lee|name_female};",
+                    "And this maiden she lived with no other {thought|noun_thought}",
+                    "Than to love and be loved by {me|pronoun_me}."
+                ]
+            },
+            {
+                title: "Love's Philosophy // Shelley",
+                text: [
+                    "The fountains mingle with the {river|noun_water}",
+                    "And the rivers with the {ocean|noun_ocean},",
+                    "The winds of heaven mix for ever",
+                    "With a sweet {emotion|noun_emotion};",
+                    "Nothing in the world is {single|adjective_single};",
+                    "All things by a law divine",
+                    "In one another's being {mingle|verb}."
+                ]
+            },
+            {
+                title: "Wild Nights // Dickinson",
+                text: [
+                    "Wild Nights - Wild Nights!",
+                    "Were I with {thee|person_you}",
+                    "Wild Nights should be",
+                    "Our {luxury|noun_luxury}!",
+                    "Rowing in Eden -",
+                    "Ah, the {Sea|noun_body_of_water}!",
+                    "Might I but moor - Tonight -",
+                    "In {thee|person_you}!"
+                ]
+            },
+            {
+                title: "Cloths of Heaven // Yeats",
+                text: [
+                    "Had I the heavens' embroidered {cloths|noun_object},",
+                    "Enwrought with golden and silver {light|noun_light},",
+                    "The blue and the dim and the dark cloths",
+                    "Of night and light and the half-{light|noun_light},",
+                    "I would spread the cloths under your {feet|body_part};",
+                    "But I, being poor, have only my {dreams|noun_abstract};",
+                    "I have spread my dreams under your feet;",
+                    "Tread softly because you tread on my {dreams|noun_abstract}."
+                ]
+            },
+            {
+                title: "If You Forget Me // Neruda",
+                text: [
+                    "I want you to know one {thing|noun_thing}.",
+                    "You know how this is:",
+                    "if I look at the crystal {moon|noun_object} at the branch",
+                    "of the red autumn at my {window|noun_place},",
+                    "if I touch near the fire the impalpable {ash|noun_element}",
+                    "everything carries me to {you|person_you}."
+                ]
+            },
+            {
+                title: "Bright Star // Keats",
+                text: [
+                    "Bright star, would I were {steadfast|adjective_steady} as thou art—",
+                    "Not in lone splendour hung aloft the {night|noun_time_of_day}",
+                    "And watching, with eternal {lids|noun_body_part} apart,",
+                    "Like nature's patient, sleepless {Eremite|noun_role}."
+                ]
+            },
+            {
+                title: "To His Coy Mistress // Marvell",
+                text: [
+                    "Had we but world enough and {time|noun_time},",
+                    "This coyness, lady, were no {crime|noun_crime}.",
+                    "We would sit down, and think which {way|noun_direction}",
+                    "To walk, and pass our long {love|noun_activity}."
+                ]
+            },
+            {
+                title: "The Good-Morrow // Donne",
+                text: [
+                    "I wonder, by my troth, what thou and I",
+                    "Did, till we {loved|verb_past_tense}?",
+                    "Were we not weaned till then?",
+                    "But sucked on country {pleasures|plural_noun_pleasures}, childishly?",
+                    "Or snorted we in the {seven sleepers' den|place_sleep}?"
+                ]
+            },
+            {
+                title: "Remember // Rossetti",
+                text: [
+                    "Remember me when I am gone {away|noun_direction},",
+                    "Gone far away into the silent {land|noun_place};",
+                    "When you can no more hold me by the {hand|body_part},",
+                    "Nor I half turn to go yet turning {stay|verb}."
+                ]
+            },
+            {
+                title: "Meeting at Night // Browning",
+                text: [
+                    "The grey sea and the long black {land|noun_place};",
+                    "And the yellow half-moon large and {low|adjective};",
+                    "And the startled little waves that leap",
+                    "In fiery ringlets from their {sleep|noun_state}."
+                ]
+            },
+            {
+                title: "The Passionate Shepherd // Marlowe",
+                text: [
+                    "Come live with me and be my {love|term_of_endearment},",
+                    "And we will all the pleasures {prove|verb},",
+                    "That Valleys, groves, hills, and {fields|plural_noun_place},",
+                    "Woods, or steepy mountain {yields|verb}."
+                ]
+            }
+        ];
+
+        // --- WORD BANK ---
+        const RomanticWords = {
+            noun: ["starlight", "velvet", "whisper", "galaxy", "eternity", "promise", "secret", "dawn", "flame", "ember", "echo", "silence"],
+            noun_season: ["winter's night", "golden autumn", "blooming spring", "endless summer"],
+            noun_nature: ["ocean", "mountain", "forest", "storm", "garden", "meadow", "river"],
+            noun_flower: ["wild rose", "lily", "orchid", "lotus", "jasmine", "violet"],
+            adjective: ["infinite", "burning", "sacred", "golden", "tender", "electric", "haunting", "breathless", "eternal", "radiant"],
+            verb: ["tremble", "burn", "worship", "dream", "collide", "dissolve", "surrender", "bloom"],
+            body_part: ["soul", "heart", "shadow", "breath", "spirit"],
+            body_part_eyes: ["eyes", "gaze", "vision", "glance"],
+            term_of_endearment: ["beloved", "darling", "angel", "muse", "star", "treasure", "sweetheart"],
+            noun_time: ["forever", "lifetimes", "moments", "centuries", "eternity"],
+            noun_emotion: ["desire", "passion", "longing", "devotion", "yearning", "ardor"],
+            place: ["paradise", "haven", "sanctuary", "eden"],
+            noun_object: ["crystal", "mirror", "letter", "pearl", "diamond", "feather"],
+            material: ["silk", "velvet", "glass", "moonlight", "stardust"],
+            noun_light: ["radiance", "glow", "shimmer", "brilliance"],
+            noun_abstract: ["dreams", "hopes", "wishes", "memories"],
+            noun_darkness: ["twilight", "dusk", "shadow", "midnight"]
+        };
+
+        // --- STATE ---
+        const selector = document.getElementById('poem-selector');
+        const linesContainer = document.getElementById('lines-container');
+        let currentPoem = Templates[0];
+        let currentIndex = 0;
+
+        // --- INIT ---
+        Templates.forEach((t, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerText = `${String(index + 1).padStart(2, '0')}. ${t.title}`;
+            selector.appendChild(opt);
+        });
+
+        function loadSelectedTemplate() {
+            currentIndex = parseInt(selector.value);
+            currentPoem = Templates[currentIndex];
+            renderTemplate();
+        }
+
+        function randomPoem() {
+            const newIndex = Math.floor(Math.random() * Templates.length);
+            selector.value = newIndex;
+            loadSelectedTemplate();
+            showToast('Random poem selected!');
+        }
+
+        function renderTemplate() {
+            linesContainer.innerHTML = "";
+            document.getElementById('current-poem-title').textContent = currentPoem.title;
+
+            // Count fields
+            let fieldCount = 0;
+            currentPoem.text.forEach(line => {
+                const matches = line.match(/\{[^}]+\}/g);
+                if (matches) fieldCount += matches.length;
+            });
+            document.getElementById('field-count').textContent = fieldCount;
+
+            currentPoem.text.forEach((line, lineIndex) => {
+                let htmlLine = line.replace(/\{([^|]+)\|([^}]+)\}/g, (match, originalWord, type) => {
+                    return `<input type="text" data-type="${type}" data-original="${originalWord}" value="${originalWord}" autocomplete="off" onfocus="this.select()" oninput="updateProgress(); checkFilled(this)">`;
+                });
+                const div = document.createElement('div');
+                div.className = 'line';
+                div.innerHTML = htmlLine;
+                div.style.opacity = '0';
+                div.style.transform = 'translateY(15px)';
+                linesContainer.appendChild(div);
+
+                // Staggered animation
+                setTimeout(() => {
+                    div.style.transition = 'all 0.4s ease';
+                    div.style.opacity = '1';
+                    div.style.transform = 'translateY(0)';
+                }, lineIndex * 60);
+            });
+
+            updateProgress();
+        }
+
+        function checkFilled(input) {
+            const original = input.dataset.original;
+            if (input.value && input.value !== original) {
+                input.classList.add('filled');
+            } else {
+                input.classList.remove('filled');
+            }
+        }
+
+        function updateProgress() {
+            const inputs = document.querySelectorAll('#lines-container input');
+            const total = inputs.length;
+            let filled = 0;
+
+            inputs.forEach(input => {
+                const original = input.dataset.original;
+                if (input.value && input.value !== original) {
+                    filled++;
+                }
+            });
+
+            const percent = total > 0 ? Math.round((filled / total) * 100) : 0;
+            document.getElementById('completed-count').textContent = `${percent}%`;
+            document.getElementById('completion-badge').textContent = `${filled}/${total}`;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+
+            // Update badge style
+            const badge = document.getElementById('completion-badge');
+            if (filled === total && total > 0) {
+                badge.classList.add('complete');
+            } else {
+                badge.classList.remove('complete');
+            }
+        }
+
+        function inspireMode() {
+            const inputs = document.querySelectorAll('#lines-container input');
+            inputs.forEach((input, i) => {
+                const type = input.dataset.type;
+                let category = RomanticWords[type];
+                if (!category) {
+                    if (type.includes("noun")) category = RomanticWords.noun;
+                    else if (type.includes("adjective")) category = RomanticWords.adjective;
+                    else if (type.includes("verb")) category = RomanticWords.verb;
+                    else category = RomanticWords.noun;
+                }
+                const word = category[Math.floor(Math.random() * category.length)];
+
+                setTimeout(() => {
+                    input.style.transform = "scale(0.9)";
+                    input.style.opacity = "0.5";
+                    setTimeout(() => {
+                        input.value = word;
+                        input.style.transform = "scale(1.05)";
+                        input.style.opacity = "1";
+                        input.classList.add('filled');
+                        setTimeout(() => {
+                            input.style.transform = "scale(1)";
+                        }, 150);
+                    }, 100);
+                }, i * 40);
+            });
+
+            setTimeout(updateProgress, inputs.length * 40 + 200);
+
+            // Burst of hearts
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => spawnHeart(), i * 50);
+            }
+        }
+
+        function generate() {
+            const inputs = document.querySelectorAll('#lines-container input');
+            const inputValues = Array.from(inputs).map(i => i.value);
+            let inputIndex = 0;
+            let html = "";
+
+            currentPoem.text.forEach(line => {
+                let processedLine = line.replace(/\{([^|]+)\|([^}]+)\}/g, () => {
+                    const val = inputValues[inputIndex++];
+                    return `<span class="filled-word">${val}</span>`;
+                });
+                html += `<div>${processedLine}</div>`;
+            });
+
+            document.getElementById('poem-content').innerHTML = html;
+            document.getElementById('poem-date').textContent = new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const overlay = document.getElementById('result-overlay');
+            const card = document.getElementById('final-poem');
+            overlay.style.pointerEvents = 'all';
+
+            anime({
+                targets: overlay,
+                opacity: [0, 1],
+                duration: 400,
+                easing: 'easeOutQuad'
+            });
+
+            anime({
+                targets: card,
+                translateY: [60, 0],
+                opacity: [0, 1],
+                duration: 700,
+                easing: 'easeOutExpo',
+                delay: 150
+            });
+
+            // Celebration hearts
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => spawnHeart(), i * 80);
+            }
+        }
+
+        function closeResult() {
+            const overlay = document.getElementById('result-overlay');
+            anime({
+                targets: overlay,
+                opacity: 0,
+                duration: 300,
+                easing: 'easeOutQuad',
+                complete: () => {
+                    overlay.style.pointerEvents = 'none';
+                }
+            });
+        }
+
+        function copyPoem() {
+            const content = document.getElementById('poem-content');
+            const text = content.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Poem copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy');
+            });
+        }
+
+        function downloadImage() {
+            const element = document.getElementById('final-poem');
+            showToast('Generating image...');
+
+            html2canvas(element, {
+                backgroundColor: '#fffef8',
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `love-poem-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                showToast('Image saved!', 'success');
+            });
+        }
+
+        function sharePoem() {
+            const content = document.getElementById('poem-content').innerText;
+            const shareText = `${content}\n\n— Created with LOVE.EXE`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Love Poem',
+                    text: shareText
+                }).catch(() => { });
+            } else {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('Poem copied for sharing!', 'success');
+                });
+            }
+        }
+
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'show' + (type ? ` ${type}` : '');
+            setTimeout(() => {
+                toast.className = '';
+            }, 2500);
+        }
+
+        // --- PARTICLE SYSTEM ---
+        const particleCanvas = document.getElementById('particles');
+        const pCtx = particleCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeParticles() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeParticles);
+        resizeParticles();
+
+        function spawnParticle() {
+            particles.push({
+                x: Math.random() * particleCanvas.width,
+                y: particleCanvas.height + 10,
+                size: Math.random() * 2 + 0.5,
+                speed: Math.random() * 0.8 + 0.3,
+                opacity: 0,
+                targetOpacity: Math.random() * 0.4 + 0.1,
+                wobble: Math.random() * 2 - 1,
+                wobbleSpeed: Math.random() * 0.02 + 0.01
+            });
+        }
+
+        function particleLoop() {
+            pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+            if (Math.random() > 0.92) spawnParticle();
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.y -= p.speed;
+                p.x += Math.sin(p.y * p.wobbleSpeed) * p.wobble * 0.3;
+
+                if (p.opacity < p.targetOpacity) p.opacity += 0.008;
+
+                const gradient = pCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+                gradient.addColorStop(0, `rgba(255, 26, 92, ${p.opacity})`);
+                gradient.addColorStop(1, `rgba(255, 26, 92, 0)`);
+
+                pCtx.fillStyle = gradient;
+                pCtx.beginPath();
+                pCtx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                pCtx.fill();
+
+                if (p.y < -20) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(particleLoop);
+        }
+        particleLoop();
+
+        // --- HEARTS SYSTEM ---
+        const heartsCanvas = document.getElementById('hearts-canvas');
+        const hCtx = heartsCanvas.getContext('2d');
+        let hearts = [];
+
+        function resizeHearts() {
+            heartsCanvas.width = window.innerWidth;
+            heartsCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeHearts);
+        resizeHearts();
+
+        function spawnHeart() {
+            hearts.push({
+                x: Math.random() * heartsCanvas.width,
+                y: heartsCanvas.height + 30,
+                size: Math.random() * 12 + 8,
+                speed: Math.random() * 2 + 1.5,
+                opacity: 0.8,
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.05,
+                wobble: Math.random() * 3 - 1.5
+            });
+        }
+
+        function drawHeart(x, y, size, rotation, opacity) {
+            hCtx.save();
+            hCtx.translate(x, y);
+            hCtx.rotate(rotation);
+            hCtx.scale(size / 30, size / 30);
+
+            hCtx.beginPath();
+            hCtx.moveTo(0, -8);
+            hCtx.bezierCurveTo(-10, -18, -20, -5, 0, 10);
+            hCtx.bezierCurveTo(20, -5, 10, -18, 0, -8);
+
+            hCtx.fillStyle = `rgba(255, 26, 92, ${opacity})`;
+            hCtx.fill();
+            hCtx.restore();
+        }
+
+        function heartsLoop() {
+            hCtx.clearRect(0, 0, heartsCanvas.width, heartsCanvas.height);
+
+            for (let i = hearts.length - 1; i >= 0; i--) {
+                let h = hearts[i];
+                h.y -= h.speed;
+                h.x += Math.sin(h.y * 0.02) * h.wobble * 0.5;
+                h.rotation += h.rotationSpeed;
+                h.opacity -= 0.003;
+
+                drawHeart(h.x, h.y, h.size, h.rotation, h.opacity);
+
+                if (h.y < -50 || h.opacity <= 0) {
+                    hearts.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(heartsLoop);
+        }
+        heartsLoop();
+
+        // Occasional ambient hearts
+        setInterval(() => {
+            if (Math.random() > 0.7) spawnHeart();
+        }, 2000);
+
+        // --- INIT ---
+        loadSelectedTemplate();
+    </script>
+</body>
+
+</html>
